@@ -1,0 +1,1 @@
+call "D:\Program Files (x86)\Adobe Animate CC 2020\AIRSDK_29_Compiler\bin\adt" -package -target ane DiscordANE.ane extension.xml -swc DiscordGameSDK.swc -platform Windows-x86-64 -C Windows-x86-64 . -platform Windows-x86 -C Windows-x86 .

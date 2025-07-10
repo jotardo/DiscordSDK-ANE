@@ -1,0 +1,12 @@
+ane-c++-sdk/.vscode/settings.json
+ane-c++-sdk/.vscode/c_cpp_properties.json
+ane-c++-sdk/build
+ane-c++-sdk/lib/x86/discord_game_sdk.dll.lib
+ane-c++-sdk/lib/x86-64/discord_game_sdk.dll.lib
+ane-c++-sdk/*.pdb
+
+ane-as3-bridge/.vscode/settings.json
+ane-as3-bridge/bin
+
+test-application/.vscode/settings.json
+test-application/bin

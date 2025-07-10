@@ -1,0 +1,103 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+            // Tác vụ phụ: Tạo thư mục build nếu chưa tồn tại
+            "label": "Create Build Directory x64",
+            "type": "shell",
+            "command": "New-Item -ItemType Directory -Force -Path '.\\build\\x86-64'",
+            "problemMatcher": [],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+        },
+		{
+			"type": "cppbuild",
+			"label": "C/C++: cl.exe Export DLL (x64)",
+			"command": "cl.exe",
+			"args": [
+				"/LD", // Tạo file DLL
+				"/Zi", // Tạo thông tin gỡ lỗi
+				"/EHsc", // Mô hình xử lý ngoại lệ
+				"/nologo", // Bỏ logo của trình biên dịch
+				"/FS", // Đảm bảo ghi file PDB an toàn
+				"/MP",// --- Cấu hình đường dẫn và tên file ---
+                // Đặt tên và vị trí cho file DLL đầu ra
+                "/Fe.\\build\\x86-64\\DiscordSDK64.dll", 
+                // Đặt thư mục cho các file object (.obj) được tạo ra
+                "/Fo.\\build\\x86-64\\",
+                // Đặt tên và vị trí cho file gỡ lỗi (.pdb)
+				"/Idiscord-files",
+
+                // Đặt vị trí cho file thư viện import (.lib) để giữ thư mục gốc sạch sẽ
+                "/IMPLIB:.\\build\\x86-64\\DiscordSDK.lib",
+				"lib\\x86-64\\discord_game_sdk.dll.lib",
+				"lib\\x86-64\\FlashRuntimeExtensions.lib",
+				"DiscordSDK.cpp",
+                "discord-files\\*.cpp" 
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build",
+			"detail": "compiler: cl.exe",
+			// ✅ Tác vụ này sẽ chạy sau khi tác vụ "Create Build Directory" hoàn thành
+            "dependsOn": [
+                "Create Build Directory x64"
+            ]
+		},
+		{
+            // Tác vụ phụ: Tạo thư mục build nếu chưa tồn tại
+            "label": "Create Build Directory x86",
+            "type": "shell",
+            "command": "New-Item -ItemType Directory -Force -Path '.\\build\\x86'",
+            "problemMatcher": [],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+        },
+		{
+			"type": "cppbuild",
+			"label": "C/C++: cl.exe Export DLL (x86)",
+			"command": "cl.exe",
+			"args": [
+				"/LD", // Tạo file DLL
+				"/Zi", // Tạo thông tin gỡ lỗi
+				"/EHsc", // Mô hình xử lý ngoại lệ
+				"/nologo", // Bỏ logo của trình biên dịch
+				"/FS", // Đảm bảo ghi file PDB an toàn
+				"/MP",// --- Cấu hình đường dẫn và tên file ---
+                // Đặt tên và vị trí cho file DLL đầu ra
+                "/Fe.\\build\\x86\\DiscordSDK.dll", 
+                // Đặt thư mục cho các file object (.obj) được tạo ra
+                "/Fo.\\build\\x86\\",
+                // Đặt tên và vị trí cho file gỡ lỗi (.pdb)
+				"/Idiscord-files",
+
+                // Đặt vị trí cho file thư viện import (.lib) để giữ thư mục gốc sạch sẽ
+                "/IMPLIB:.\\build\\x86\\DiscordSDK.lib",
+				"lib\\x86\\discord_game_sdk.dll.lib",
+				"lib\\x86\\FlashRuntimeExtensions.lib",
+				"DiscordSDK.cpp",
+                "discord-files\\*.cpp" 
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build",
+			"detail": "compiler: cl.exe",
+			// ✅ Tác vụ này sẽ chạy sau khi tác vụ "Create Build Directory" hoàn thành
+            "dependsOn": [
+                "Create Build Directory x86"
+            ]
+		},
+	]
+}

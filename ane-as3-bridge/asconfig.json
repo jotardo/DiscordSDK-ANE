@@ -1,0 +1,16 @@
+{
+	"type": "lib",
+	"config": "air",
+	"compilerOptions": {
+		"source-path": [
+			"src"
+		],
+		"include-sources": [
+			"src"
+		],
+		"library-path": [
+			"libs"
+		],
+		"output": "bin/DiscordGameSDK.swc"
+	}
+}
