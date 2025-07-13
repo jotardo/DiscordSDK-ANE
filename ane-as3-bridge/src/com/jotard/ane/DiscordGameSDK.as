@@ -3,6 +3,8 @@ package com.jotard.ane
     import flash.events.EventDispatcher;
     import flash.external.ExtensionContext;
     import flash.events.StatusEvent;
+    import flash.utils.setInterval;
+    import flash.utils.clearInterval;
 
     public class DiscordGameSDK extends EventDispatcher
     {
@@ -14,7 +16,6 @@ package com.jotard.ane
         private function onStatus(data:Object):void
         {
             trace(NATIVE_HEADER_NAME, "Code:", data.code, "- Level:", data.level);
-            // Solving status, if one want dispatchEvent on this
         }
 
         public function DiscordGameSDK()
@@ -27,7 +28,7 @@ package com.jotard.ane
             }
         }
 
-        public function initialize(applicationID:String, activity:Object=null):void
+        public function initialize(applicationID:String, activity:Object=null, reconnectInterval:int = 5000):void
         {
             if (!_context)
             {
@@ -38,9 +39,34 @@ package com.jotard.ane
             var defaultFlag:String = "0";
             var notRequireDiscordFlag:String = "1";
             _context.call("initialize", applicationID, notRequireDiscordFlag, activity);
+
+            var onSuccessConnect:Function;
+            // var id:uint;
+            onSuccessConnect = function(data:Object):void
+            {
+                _context.removeEventListener(StatusEvent.STATUS, onSuccessConnect);
+                if (data && data.code == "CORE_INIT")
+                {
+                    var statusCode:int = int(data.level);
+                    if (statusCode == DiscordResult.Ok)
+                    {
+                        _context.call("updateActivity", activity);
+                        // clearInterval(id);
+                    }
+                    else if (reconnectInterval > 0)
+                    {
+                        // _context.addEventListener(StatusEvent.STATUS, onSuccessConnect);
+                        // id = setInterval(function():void
+                        // {
+                        //     _context.call("initialize", applicationID, notRequireDiscordFlag, activity);
+                        // }, reconnectInterval);
+                    };
+                };
+            }
+            _context.addEventListener(StatusEvent.STATUS, onSuccessConnect);
         }
 
-        public function runCallback():void
+        public function runCallbacks():void
         {
             if (!_context)
             {
@@ -48,11 +74,11 @@ package com.jotard.ane
                 return;
             }
 
-            _context.call("runCallback");
+            _context.call("runCallbacks");
         }
         
 
-        public function updateActivity(state:String, details:String, largeImageKey:String, largeImageText:String, smallImageKey:String, smallImageText:String):void
+        public function updateActivity(activity:Object):void
         {
             if (!_context)
             {
@@ -60,7 +86,7 @@ package com.jotard.ane
                 return;
             }
 
-            _context.call("updateActivity", state, details, largeImageKey, largeImageText, smallImageKey, smallImageText);
+            _context.call("updateActivity", activity);
         }
 
     }

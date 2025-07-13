@@ -21,14 +21,16 @@ struct DiscordANEState {
 
 // Get a String from FREObject
 std::string getStringFromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return nullptr;
     uint32_t length = 0;
     const uint8_t* value = nullptr;
     FREGetObjectAsUTF8(freObject, &length, &value);
-    if (value == nullptr) return "";
+    if (value == nullptr) return nullptr;
     return std::string(reinterpret_cast<const char*>(value), length);
 }
 
 uint64_t getUnsignedInt64FromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return 0;
     // Lấy FREObject dưới dạng chuỗi UTF8
     uint32_t length = 0;
     const uint8_t* value = nullptr;
@@ -53,6 +55,7 @@ uint64_t getUnsignedInt64FromFRE(FREContext ctx, FREObject freObject) {
 }
 
 int64_t getSignedInt64FromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return 0;
     uint32_t length = 0;
     const uint8_t* value = nullptr;
     FREResult result = FREGetObjectAsUTF8(freObject, &length, &value);
@@ -73,6 +76,7 @@ int64_t getSignedInt64FromFRE(FREContext ctx, FREObject freObject) {
 }
 
 int32_t getInt32FromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return 0;
     int32_t value;
     FREResult result = FREGetObjectAsInt32(freObject, &value);
 
@@ -85,6 +89,7 @@ int32_t getInt32FromFRE(FREContext ctx, FREObject freObject) {
 }
 
 uint32_t getUnsignedInt32FromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return 0;
     uint32_t value;
     FREResult result = FREGetObjectAsUint32(freObject, &value);
 
@@ -96,103 +101,89 @@ uint32_t getUnsignedInt32FromFRE(FREContext ctx, FREObject freObject) {
     return value;
 }
 
-// Get a Discord Activity from FREObject (as AS3 object)
-discord::Activity getActivityFromFRE(FREContext ctx, FREObject freObject, discord::Activity* prevActivity) {
-    if (prevActivity == nullptr) {
-        prevActivity = {};
+FREObject getObjectPropertyFromFRE(FREContext ctx, FREObject freObject, std::string propName) {
+    FREObject object = nullptr;
+    FREResult result = FREGetObjectProperty(freObject, (const uint8_t*) propName.c_str(), &object, nullptr);
+    if (result == FRE_OK) {
+        FREObjectType objectType;
+        FREGetObjectType(object, &objectType);
+        if (objectType != FRE_TYPE_NULL) {
+            return object;
+        }
     }
-
-    // Retrieve activity parameters
-    FREObject activityState;
-    FREObject activityDetails;
-    // For the timestamp
-    FREObject activityTimestampStart;
-    FREObject activityTimestampEnd;
-    // For the activity
-    FREObject activityLargeImg;
-    FREObject activityLargeImgText;
-    FREObject activitySmallImg;
-    FREObject activitySmallImgText;
-    // For the party
-    FREObject activityPartyID;
-    FREObject activityPartyCurrentSize;
-    FREObject activityPartyMaxSize;
-    // For match join secret???
-    FREObject activityMatchSecret;
-    FREObject activityJoinSecret;
-    FREObject activitySpectateSecret;
-
-    // FREGetObjectProperty aaaaaaaaaaaaa
-    FREGetObjectProperty(freObject, (const uint8_t*) "state", &activityState, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "details", &activityDetails, nullptr);
-    
-    FREGetObjectProperty(freObject, (const uint8_t*) "timestampStart", &activityTimestampStart, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "timestampEnd", &activityTimestampEnd, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "largeImage", &activityLargeImg, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "largeText", &activityLargeImgText, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "smallImage", &activitySmallImg, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "smallText", &activitySmallImgText, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "partyID", &activityPartyID, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "partyCurrentSize", &activityPartyCurrentSize, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "partyMaxSize", &activityPartyMaxSize, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "matchSecret", &activityMatchSecret, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "joinSecret", &activityJoinSecret, nullptr);
-    FREGetObjectProperty(freObject, (const uint8_t*) "spectateSecret", &activitySpectateSecret, nullptr);
-
-    // Getting correct type to update
-    std::string state = getStringFromFRE(ctx, activityState);
-    std::string details = getStringFromFRE(ctx, activityDetails);
-    dispatchEvent(ctx, "Getting Timestamp Start", "");
-    int64_t startTimestamp = getSignedInt64FromFRE(ctx, activityTimestampStart);
-    dispatchEvent(ctx, "Getting Timestamp END", "");
-    int64_t endTimestamp = getSignedInt64FromFRE(ctx, activityTimestampEnd);
-    dispatchEvent(ctx, "Getting Timestamp DONE", "");
-    std::string largeImg = getStringFromFRE(ctx, activityLargeImg);
-    std::string largeText = getStringFromFRE(ctx, activityLargeImgText);
-    std::string smallImg = getStringFromFRE(ctx, activitySmallImg);
-    std::string smallText = getStringFromFRE(ctx, activitySmallImgText);
-    std::string partyID = getStringFromFRE(ctx, activityPartyID);
-    int32_t partyCurrentSize = getInt32FromFRE(ctx, activityPartyCurrentSize);
-    int32_t partyMaxSize = getInt32FromFRE(ctx, activityPartyMaxSize);
-    std::string matchSecret = getStringFromFRE(ctx, activityMatchSecret);
-    std::string joinSecret = getStringFromFRE(ctx, activityJoinSecret);
-    std::string spectateSecret = getStringFromFRE(ctx, activitySpectateSecret);
-
-    prevActivity->SetDetails(details.c_str());
-    prevActivity->SetState(state.c_str());
-    prevActivity->GetTimestamps().SetStart(startTimestamp);
-    prevActivity->GetTimestamps().SetEnd(endTimestamp);
-    prevActivity->GetAssets().SetSmallImage(smallImg.c_str());
-    prevActivity->GetAssets().SetSmallText(smallText.c_str());
-    prevActivity->GetAssets().SetLargeImage(largeImg.c_str());
-    prevActivity->GetAssets().SetLargeText(largeText.c_str());
-    prevActivity->GetParty().GetSize().SetCurrentSize(partyCurrentSize);
-    prevActivity->GetParty().GetSize().SetMaxSize(partyMaxSize);
-    prevActivity->GetParty().SetId(partyID.c_str());
-    prevActivity->GetSecrets().SetJoin(joinSecret.c_str());
-    prevActivity->GetSecrets().SetMatch(matchSecret.c_str());
-    prevActivity->GetSecrets().SetSpectate(spectateSecret.c_str());
-
-    return *prevActivity;
+    return nullptr;
 }
 
-// This is for threading, since RequireDiscord flags causes the C++ to stop the AIR programs
 
+// Get a Discord Activity from FREObject (as AS3 object)
+void getActivityFromFRE(FREContext ctx, FREObject freObject, discord::Activity* activityToUpdate) {
+    // Luôn kiểm tra con trỏ đầu vào để đảm bảo an toàn.
+    if (activityToUpdate == nullptr || freObject == nullptr) {
+        dispatchEvent(ctx, "pointersucks", "");
+        return;
+    }
 
-// Init SDK
+    FREObject prop = nullptr;
+
+    // --- State & Details ---
+    prop = getObjectPropertyFromFRE(ctx, freObject, "state");
+    if (prop) activityToUpdate->SetState(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "details");
+    if (prop) activityToUpdate->SetDetails(getStringFromFRE(ctx, prop).c_str());
+
+    // --- Timestamps ---
+    prop = getObjectPropertyFromFRE(ctx, freObject, "timestampStart");
+    if (prop) activityToUpdate->GetTimestamps().SetStart(getSignedInt64FromFRE(ctx, prop));
+    
+    prop = getObjectPropertyFromFRE(ctx, freObject, "timestampEnd");
+    if (prop) activityToUpdate->GetTimestamps().SetEnd(getSignedInt64FromFRE(ctx, prop));
+
+    // --- Assets ---
+    prop = getObjectPropertyFromFRE(ctx, freObject, "largeImage");
+    if (prop) activityToUpdate->GetAssets().SetLargeImage(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "largeText");
+    if (prop) activityToUpdate->GetAssets().SetLargeText(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "smallImage");
+    if (prop) activityToUpdate->GetAssets().SetSmallImage(getStringFromFRE(ctx, prop).c_str());
+    
+    prop = getObjectPropertyFromFRE(ctx, freObject, "smallText");
+    if (prop) activityToUpdate->GetAssets().SetSmallText(getStringFromFRE(ctx, prop).c_str());
+    
+    // --- Party ---
+    prop = getObjectPropertyFromFRE(ctx, freObject, "partyID");
+    if (prop) activityToUpdate->GetParty().SetId(getStringFromFRE(ctx, prop).c_str());
+    
+    prop = getObjectPropertyFromFRE(ctx, freObject, "partyCurrentSize");
+    if (prop) activityToUpdate->GetParty().GetSize().SetCurrentSize(getInt32FromFRE(ctx, prop));
+    
+    prop = getObjectPropertyFromFRE(ctx, freObject, "partyMaxSize");
+    if (prop) activityToUpdate->GetParty().GetSize().SetMaxSize(getInt32FromFRE(ctx, prop));
+
+    // --- Secrets ---
+    prop = getObjectPropertyFromFRE(ctx, freObject, "matchSecret");
+    if (prop) activityToUpdate->GetSecrets().SetMatch(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "joinSecret");
+    if (prop) activityToUpdate->GetSecrets().SetJoin(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "spectateSecret");
+    if (prop) activityToUpdate->GetSecrets().SetSpectate(getStringFromFRE(ctx, prop).c_str());
+}
+
+// initate connection to the SDK and Return DiscordStatus
 FREObject initialize(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
-    dispatchEvent(ctx, "CORE_INIT", "hey");
     DiscordANEState* state = nullptr;
     FREGetContextNativeData(ctx, (void**) &state);
 
     // Get parameters from AS3
     uint64_t application_id = getUnsignedInt64FromFRE(ctx, argv[0]);
     uint64_t discordFlag = getUnsignedInt64FromFRE(ctx, argv[1]);
-    FREObject activityProp = argv[2];
 
-    dispatchEvent(ctx, "CORE_INIT", "it's me");
-    if (!state || state->core) {
-        dispatchEvent(ctx, "CORE_INIT", "Huh?");
+    if (state && state->core) {
+        dispatchEvent(ctx, "CORE_INIT", std::to_string(uint32_t(discord::Result::Ok)));
         return nullptr;
     }
 
@@ -200,46 +191,32 @@ FREObject initialize(FREContext ctx, void* funcData, uint32_t argc, FREObject ar
     discord::Core* core_ptr{};
     auto result = discord::Core::Create(application_id, discordFlag, &core_ptr);
     
-    dispatchEvent(ctx, "CORE_INIT", "goku");
     if (result != discord::Result::Ok) {
-        dispatchEvent(ctx, "CORE_INIT", "Could not connect to Discord.");
+        dispatchEvent(ctx, "CORE_INIT", std::to_string(uint32_t(result)));
         return nullptr;
     }
-    dispatchEvent(ctx, "CORE_INIT", "no");
     state->core.reset(core_ptr);
-    dispatchEvent(ctx, "CORE_INIT", "way");
-    if (!state->core) {
-        dispatchEvent(ctx, "CORE_INIT", "Core creation failed.");
-        return nullptr;
-    }
 
     // This hook exists for Discord loggings
     state->core->SetLogHook(discord::LogLevel::Debug, [ctx, state](discord::LogLevel level, const char* message) {
-        std::cout << "DISCORD_LOG: " << message << std::endl;
-        dispatchEvent(ctx, "DISCORD_LOG: ", message + std::to_string(static_cast<int>(level)));
+        dispatchEvent(ctx, "DISCORD_LOG", std::string(message));
     });
-
-    getActivityFromFRE(ctx, activityProp, &state->activity);
-
-    state->core->ActivityManager().UpdateActivity(state->activity, [ctx, state](discord::Result res) {
-        std::string status_message = "ACTIVITY_STATUS: ";
-        status_message += (res == discord::Result::Ok) ? "Succeeded" : "Failed";
-        dispatchEvent(ctx, "ACTIVITY: ", status_message);
-    });
+    
+    dispatchEvent(ctx, "CORE_INIT", std::to_string(uint32_t(result)));
     return nullptr;
 }
 
-// running callback
-FREObject runCallback(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
+// running callback, return 
+FREObject runCallbacks(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
     DiscordANEState* state = nullptr;
     FREGetContextNativeData(ctx, (void**)&state);
     if (state && state->core) {
         discord::Result result = state->core->RunCallbacks();
-        dispatchEvent(ctx, "RUN_CALLBACK", std::to_string(static_cast<int>(result)));
+        dispatchEvent(ctx, "RUN_CALLBACKS", std::to_string(uint32_t(result)));
     }
     else
     {
-        dispatchEvent(ctx, "NO_STATE_OR_CORE_FAILED", "");
+        dispatchEvent(ctx, "RUN_CALLBACKS", std::to_string(uint32_t(discord::Result::NotRunning)));
     }
     return nullptr;
 }
@@ -248,29 +225,31 @@ FREObject runCallback(FREContext ctx, void* funcData, uint32_t argc, FREObject a
 FREObject updateActivity(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
     DiscordANEState* state = nullptr;
     FREGetContextNativeData(ctx, (void**)&state);
-    if (!state || !state->core || argc < 2) return nullptr;
+    if (argc < 1) {
+        dispatchEvent(ctx, "UPDATE_ACTIVITY", std::to_string(uint32_t(discord::Result::InvalidPayload)));
+        return nullptr;
+    }
+    if (!state || !state->core) {
+        dispatchEvent(ctx, "UPDATE_ACTIVITY", std::to_string(uint32_t(discord::Result::NotFound)));
+        return nullptr;
+    }
 
     FREObject props = argv[0];
-    
-    getActivityFromFRE(ctx, props, &state->activity);
-    state->core->ActivityManager().UpdateActivity(state->activity, [ctx](discord::Result result) {
-        dispatchEvent(ctx, "HOH??", std::to_string(static_cast<int>(result)));
-        if (result == discord::Result::Ok) {
-            dispatchEvent(ctx, "ACTIVITY_UPDATE_SUCCESS", "");
-        } else {
-            dispatchEvent(ctx, "ACTIVITY_UPDATE_FAILED", "");
-        }
+    discord::Activity newActivity = state->activity;
+    getActivityFromFRE(ctx, props, &newActivity);
+    state->core->ActivityManager().UpdateActivity(newActivity, [ctx](discord::Result result) {
+        dispatchEvent(ctx, "UPDATE_ACTIVITY", std::to_string(uint32_t(result)));
     });
 
     return nullptr;
 }
 
-// Dọn dẹp tài nguyên
+// Cleaning up. Depends on your needs
 FREObject dispose(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
     DiscordANEState* state = nullptr;
     FREGetContextNativeData(ctx, (void**)&state);
     if (state && state->core) {
-        state->core.reset(); // unique_ptr sẽ tự động gọi destructor và giải phóng
+        state -> core.reset();
     }
     return nullptr;
 }
@@ -282,7 +261,7 @@ void ContextInitializer(void* extData, const uint8_t* ctxType, FREContext ctx, u
     FRENamedFunction* func = (FRENamedFunction*)malloc(sizeof(FRENamedFunction) * (*numFunctions));
     
     func[0] = { (const uint8_t*)"initialize", nullptr, &initialize };
-    func[1] = { (const uint8_t*)"runCallback", nullptr, &runCallback };
+    func[1] = { (const uint8_t*)"runCallbacks", nullptr, &runCallbacks };
     func[2] = { (const uint8_t*)"updateActivity", nullptr, &updateActivity };
     func[3] = { (const uint8_t*)"dispose", nullptr, &dispose };
     

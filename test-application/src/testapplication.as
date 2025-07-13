@@ -35,15 +35,13 @@ package
 			var sdk:DiscordGameSDK = new DiscordGameSDK();
 			trace("B");
 			sdk.initialize("1377619298104901703", {
-				"details": "Bruh LMAO",
-				// "timestampStart": "" + unixTimestamp,
-				"timestampEnd": "" + unixTimestamp2,
-				"largeImage": "ssf2"
+				"details":"bruh",
+				"state":"HUUUH?"
 			});
 			trace("C");
 			var timer:Timer = new Timer(1000);
 			timer.addEventListener(TimerEvent.TIMER, function (e:*):void {
-				sdk.runCallback();
+				sdk.runCallbacks();
 			});
 			timer.start();
 		}

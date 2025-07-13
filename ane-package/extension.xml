@@ -11,9 +11,9 @@
     </platform>
     <platform name="Windows-x86-64">
       <applicationDeployment>
-        <nativeLibrary>discordsdk.dll</nativeLibrary>
-        <initializer>ExtensionInitializer</initializer>
-        <finalizer>ExtensionFinalizer</finalizer>
+        <nativeLibrary>DiscordSDK64.dll</nativeLibrary>
+        <initializer>DiscordGameSDKExtensionInitializer</initializer>
+        <finalizer>DiscordGameSDKExtensionFinalizer</finalizer>
       </applicationDeployment>
     </platform>
   </platforms>
