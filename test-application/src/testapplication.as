@@ -34,7 +34,7 @@ package
 			trace("A");
 			var sdk:DiscordGameSDK = new DiscordGameSDK();
 			trace("B");
-			sdk.initialize("1377619298104901703", {
+			sdk.initialize("424087019149328395", {
 				"details":"bruh",
 				"state":"HUUUH?"
 			});
