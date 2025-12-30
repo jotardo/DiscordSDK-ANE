@@ -7,8 +7,9 @@ package com.jotard.ane
 
         public static const CORE_INIT:String = "CORE_INIT";
         public static const DISCORD_LOG_HOOK:String = "DISCORD_LOG_HOOK";
-        public static const ON_ACTIVITY_JOIN:String = "ON_ACTIVITY_JOIN";
         public static const ON_ACTIVITY_JOIN_REQUEST:String = "ON_ACTIVITY_JOIN_REQUEST";
+        public static const ON_ACTIVITY_INVITE:String = "ON_ACTIVITY_INVITE";
+        public static const ON_ACTIVITY_JOIN:String = "ON_ACTIVITY_JOIN";
         public static const ON_ACTIVITY_SPECTATE:String = "ON_ACTIVITY_SPECTATE";
         public static const RUN_CALLBACKS:String = "RUN_CALLBACKS";
         public static const UPDATE_ACTIVITY:String = "UPDATE_ACTIVITY";

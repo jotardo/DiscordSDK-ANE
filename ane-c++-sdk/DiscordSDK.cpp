@@ -278,7 +278,7 @@ FREObject initialize(FREContext ctx, void* funcData, uint32_t argc, FREObject ar
 
         result["activity"] = j;
 
-        dispatchEvent(ctx, "ON_ACTIVITY_JOIN_REQUEST", result.dump());
+        dispatchEvent(ctx, "ON_ACTIVITY_INVITE", result.dump());
     });
     
     dispatchEvent(ctx, "CORE_INIT", std::to_string(uint32_t(result)));
