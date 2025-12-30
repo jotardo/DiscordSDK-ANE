@@ -3,14 +3,12 @@ package com.jotard.ane
     import flash.events.EventDispatcher;
     import flash.external.ExtensionContext;
     import flash.events.StatusEvent;
-    import flash.utils.setInterval;
-    import flash.utils.clearInterval;
 
     public class DiscordGameSDK extends EventDispatcher
     {
         private static var _context:ExtensionContext;
         private static const EXTENSION_ID:String = "com.jotard.ane.DiscordANE";
-        private static const NATIVE_HEADER_NAME:String = "[DiscordANE Native]";
+        private static const NATIVE_HEADER_NAME:String = "[DiscordANENative]";
         private static const AS3_HEADER_NAME:String = "[DiscordGameSDK]";
 
         private function onStatus(data:Object):void
@@ -21,9 +19,12 @@ package com.jotard.ane
         public function DiscordGameSDK()
         {
             _context = ExtensionContext.createExtensionContext(EXTENSION_ID, null);
-            if (_context) {
+            if (_context)
+            {
                 _context.addEventListener(StatusEvent.STATUS, onStatus);
-            } else {
+            }
+            else
+            {
                 trace(AS3_HEADER_NAME, "ExtensionContext DiscordGameSDK could not be created.");
             }
         }
@@ -41,7 +42,6 @@ package com.jotard.ane
             _context.call("initialize", applicationID, notRequireDiscordFlag, activity);
 
             var onSuccessConnect:Function;
-            // var id:uint;
             onSuccessConnect = function(data:Object):void
             {
                 _context.removeEventListener(StatusEvent.STATUS, onSuccessConnect);
@@ -51,16 +51,7 @@ package com.jotard.ane
                     if (statusCode == DiscordResult.Ok)
                     {
                         _context.call("updateActivity", activity);
-                        // clearInterval(id);
                     }
-                    else if (reconnectInterval > 0)
-                    {
-                        // _context.addEventListener(StatusEvent.STATUS, onSuccessConnect);
-                        // id = setInterval(function():void
-                        // {
-                        //     _context.call("initialize", applicationID, notRequireDiscordFlag, activity);
-                        // }, reconnectInterval);
-                    };
                 };
             }
             _context.addEventListener(StatusEvent.STATUS, onSuccessConnect);
@@ -76,7 +67,6 @@ package com.jotard.ane
 
             _context.call("runCallbacks");
         }
-        
 
         public function updateActivity(activity:Object):void
         {
@@ -87,6 +77,39 @@ package com.jotard.ane
             }
 
             _context.call("updateActivity", activity);
+        }
+
+        public function sendRequestReply(userID:String, replyNum:int):void
+        {
+            if (!_context)
+            {
+                trace(AS3_HEADER_NAME, "ERROR: No context to call!")
+                return;
+            }
+
+            _context.call("sendRequestReply", userID, replyNum);
+        }
+
+        public function sendInvite(userID:String, activationType:int, content:String):void
+        {
+            if (!_context)
+            {
+                trace(AS3_HEADER_NAME, "ERROR: No context to call!")
+                return;
+            }
+
+            _context.call("sendInvite", userID, activationType, content);
+        }
+
+        public function acceptInvite(userID:String):void
+        {
+            if (!_context)
+            {
+                trace(AS3_HEADER_NAME, "ERROR: No context to call!")
+                return;
+            }
+
+            _context.call("acceptInvite", userID);
         }
 
     }

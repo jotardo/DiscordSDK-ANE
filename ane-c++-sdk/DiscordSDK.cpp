@@ -7,6 +7,7 @@
 
 #include "discord.h"
 #include "FlashRuntimeExtensions.h"
+#include "json.hpp"
 
 // Sending Event back to the AS3
 void dispatchEvent(FREContext ctx, const std::string& code, const std::string& level = "") {
@@ -101,6 +102,19 @@ uint32_t getUnsignedInt32FromFRE(FREContext ctx, FREObject freObject) {
     return value;
 }
 
+bool getBoolFromFRE(FREContext ctx, FREObject freObject) {
+    if (freObject == nullptr) return false;
+    uint32_t value = 0;
+    FREResult result = FREGetObjectAsBool(freObject, &value);
+
+    if (result != FRE_OK) {
+        dispatchEvent(ctx, "BOOL Failed", "");
+        return false;
+    }
+
+    return (value != 0);
+}
+
 FREObject getObjectPropertyFromFRE(FREContext ctx, FREObject freObject, std::string propName) {
     FREObject object = nullptr;
     FREResult result = FREGetObjectProperty(freObject, (const uint8_t*) propName.c_str(), &object, nullptr);
@@ -171,6 +185,9 @@ void getActivityFromFRE(FREContext ctx, FREObject freObject, discord::Activity* 
 
     prop = getObjectPropertyFromFRE(ctx, freObject, "spectateSecret");
     if (prop) activityToUpdate->GetSecrets().SetSpectate(getStringFromFRE(ctx, prop).c_str());
+
+    prop = getObjectPropertyFromFRE(ctx, freObject, "instance");
+    if (prop) activityToUpdate->SetInstance(getBoolFromFRE(ctx, prop));
 }
 
 // initate connection to the SDK and Return DiscordStatus
@@ -199,7 +216,69 @@ FREObject initialize(FREContext ctx, void* funcData, uint32_t argc, FREObject ar
 
     // This hook exists for Discord loggings
     state->core->SetLogHook(discord::LogLevel::Debug, [ctx, state](discord::LogLevel level, const char* message) {
-        dispatchEvent(ctx, "DISCORD_LOG", std::string(message));
+        dispatchEvent(ctx, "DISCORD_LOG_HOOK", std::string(message));
+    });
+    
+    // These Events are wacky xdx
+    state->core->ActivityManager().OnActivityJoin.Connect([ctx](const char* joinSecret) {
+        dispatchEvent(ctx, "ON_ACTIVITY_JOIN", std::string(joinSecret));
+    });
+    state->core->ActivityManager().OnActivitySpectate.Connect([ctx](const char* spectateSecret) {
+        dispatchEvent(ctx, "ON_ACTIVITY_SPECTATE", std::string(spectateSecret));
+    });
+    state->core->ActivityManager().OnActivityJoinRequest.Connect([ctx](const discord::User user) {
+        // 1. Create a JSON object
+        nlohmann::json j;
+
+        // 2. Extract and add properties
+        j["id"] = std::to_string(user.GetId());
+        j["username"] = user.GetUsername();
+        j["discriminator"] = user.GetDiscriminator();
+        j["avatar"] = user.GetAvatar();
+
+        dispatchEvent(ctx, "ON_ACTIVITY_JOIN_REQUEST", j.dump());
+    });
+    state->core->ActivityManager().OnActivityInvite.Connect([ctx](discord::ActivityActionType type, const discord::User user, const discord::Activity activity) {
+        nlohmann::json result;
+        result["type"] = type;
+        result["user"]["id"] = std::to_string(user.GetId());
+        result["user"]["username"] = user.GetUsername();
+        result["user"]["discriminator"] = user.GetDiscriminator();
+        result["user"]["avatar"] = user.GetAvatar();
+
+        nlohmann::json j;
+        // Add main activity properties
+        j["state"] = activity.GetState();
+        j["details"] = activity.GetDetails();
+        j["name"] = activity.GetName();
+
+        // Handle nested Timestamps object
+        nlohmann::json timestamps;
+        timestamps["start"] = activity.GetTimestamps().GetStart();
+        timestamps["end"] = activity.GetTimestamps().GetEnd();
+        j["timestamps"] = timestamps;
+
+        // Handle nested Assets object
+        nlohmann::json assets;
+        assets["large_image"] = activity.GetAssets().GetLargeImage();
+        assets["large_text"] = activity.GetAssets().GetLargeText();
+        assets["small_image"] = activity.GetAssets().GetSmallImage();
+        assets["small_text"] = activity.GetAssets().GetSmallText();
+        j["assets"] = assets;
+
+        // Handle ActivityType and Party (if applicable)
+        j["type"] = static_cast<int>(activity.GetType());
+        
+        // Add party details if available
+        nlohmann::json party;
+        party["id"] = activity.GetParty().GetId();
+        party["size"]["current_size"] = activity.GetParty().GetSize().GetCurrentSize();
+        party["size"]["max_size"] = activity.GetParty().GetSize().GetMaxSize();
+        j["party"] = party;
+
+        result["activity"] = j;
+
+        dispatchEvent(ctx, "ON_ACTIVITY_JOIN_REQUEST", result.dump());
     });
     
     dispatchEvent(ctx, "CORE_INIT", std::to_string(uint32_t(result)));
@@ -254,22 +333,75 @@ FREObject dispose(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[
     return nullptr;
 }
 
+// Sends a reply to an Ask to Join request. (Not TESTED)
+FREObject sendRequestReply(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
+    DiscordANEState* state = nullptr;
+    FREGetContextNativeData(ctx, (void**)&state);
+
+    int64_t userId = getSignedInt64FromFRE(ctx, argv[0]);
+    int32_t reply = getInt32FromFRE(ctx, argv[1]);
+
+    // Gửi phản hồi chấp nhận
+    state->core->ActivityManager().SendRequestReply(userId, static_cast<discord::ActivityJoinRequestReply>(reply), [ctx](discord::Result res) {
+        dispatchEvent(ctx, "SEND_REQUEST_REPLY", std::to_string(uint32_t(res)));
+    });
+    return nullptr;
+}
+
+// Send an Invitation xdx
+FREObject sendInvite(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
+    DiscordANEState* state = nullptr;
+    FREGetContextNativeData(ctx, (void**)&state);
+
+    int64_t userId = getSignedInt64FromFRE(ctx, argv[0]);
+    int32_t activationType = getInt32FromFRE(ctx, argv[1]);
+    std::string content = getStringFromFRE(ctx, argv[2]);
+
+    // Gửi phản hồi chấp nhận
+    state->core->ActivityManager().SendInvite(userId, static_cast<discord::ActivityActionType>(activationType), content.c_str(), [ctx](discord::Result res) {
+        dispatchEvent(ctx, "SEND_INVITE", std::to_string(uint32_t(res)));
+    });
+    return nullptr;
+}
+
+// Send an Invitation xdx
+FREObject acceptInvite(FREContext ctx, void* funcData, uint32_t argc, FREObject argv[]) {
+    DiscordANEState* state = nullptr;
+    FREGetContextNativeData(ctx, (void**)&state);
+
+    int64_t userId = getSignedInt64FromFRE(ctx, argv[0]);
+
+    // Gửi phản hồi chấp nhận
+    state->core->ActivityManager().AcceptInvite(userId, [ctx](discord::Result res) {
+        dispatchEvent(ctx, "ACCEPT_INVITE", std::to_string(uint32_t(res)));
+    });
+    return nullptr;
+}
+
+
+/*I WONDER HOW ARE WE USING EVENT HERE TO PASS A CALLBACK FROM AS3 XDX
+PLANNING ON ADD OR REMOVE LISTENER FOR THOSE EVENT HERE*/
 
 // Define methods for communicating
 void ContextInitializer(void* extData, const uint8_t* ctxType, FREContext ctx, uint32_t* numFunctions, const FRENamedFunction** functions) {
-    *numFunctions = 4;
+    *numFunctions = 7;
     FRENamedFunction* func = (FRENamedFunction*)malloc(sizeof(FRENamedFunction) * (*numFunctions));
     
     func[0] = { (const uint8_t*)"initialize", nullptr, &initialize };
     func[1] = { (const uint8_t*)"runCallbacks", nullptr, &runCallbacks };
     func[2] = { (const uint8_t*)"updateActivity", nullptr, &updateActivity };
     func[3] = { (const uint8_t*)"dispose", nullptr, &dispose };
+    func[4] = { (const uint8_t*)"sendRequestReply", nullptr, &sendRequestReply };
+    func[5] = { (const uint8_t*)"sendInvite", nullptr, &sendInvite };
+    func[6] = { (const uint8_t*)"acceptInvite", nullptr, &acceptInvite };
     
     *functions = func;
     
     DiscordANEState* state = new DiscordANEState();
     FRESetContextNativeData(ctx, state);
 }
+
+/* IGNORE THESE*/
 
 void ContextFinalizer(FREContext ctx) {
     DiscordANEState* state = nullptr;

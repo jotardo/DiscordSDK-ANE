@@ -22,7 +22,7 @@
 	<filename>testapplication</filename>
 
 	<!-- Determines the architecture of the Windows captive app (non-Flash Builder workflows only)-->
-	<architecture>64</architecture>
+	<!-- <architecture>64</architecture> -->
 
 	<!-- The name that is displayed in the AIR application installer. 
 	May have multiple values for each language. See samples or xsd schema file. Optional. -->
